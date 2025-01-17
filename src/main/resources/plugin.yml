@@ -1,0 +1,6 @@
+name: PlayLegendRank
+version: 1.0.0
+main: de.janburzinski.rank.Main
+description: Rank System für PlayLegend als Programmieraufgabe
+author: Jan Burzinski
+api-version: '1.21.4'
