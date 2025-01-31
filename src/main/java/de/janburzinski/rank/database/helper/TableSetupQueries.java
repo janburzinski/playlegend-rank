@@ -4,7 +4,7 @@ public class TableSetupQueries {
     /**
      * Rank Tables
      */
-    public static final String CREATE_RANK_TABLE = "CREATE TABLE IF NOT EXIST rank (\n" +
+    public static final String CREATE_RANK_TABLE = "CREATE TABLE IF NOT EXISTS rank (\n" +
             "    rank_id SERIAL PRIMARY KEY,\n" +
             "    rank_dpname VARCHAR(255) NOT NULL,\n" +
             "    prio INT NOT NULL,\n" +
@@ -12,7 +12,8 @@ public class TableSetupQueries {
             "    color VARCHAR(50) NOT NULL\n" +
             ")";
 
-    public static final String CREATE_RANK_PERM_TABLE = "CREATE TABLE IF NOT EXIST rank_perm (\n" +
+
+    public static final String CREATE_RANK_PERM_TABLE = "CREATE TABLE IF NOT EXISTS rank_perm (\n" +
             "    rank_id INT NOT NULL,\n" +
             "    permission VARCHAR(255) NOT NULL,\n" +
             "    has_op BOOLEAN NOT NULL DEFAULT FALSE,\n" +
@@ -20,24 +21,36 @@ public class TableSetupQueries {
             "    FOREIGN KEY (rank_id) REFERENCES Rank(rank_id) ON DELETE CASCADE\n" +
             ");";
 
-    public static final String CREATE_DEFAULT_RANK = "INSERT INTO rank (rank_dpname, prio, prefix, color) VALUES ('default', 0, 'PLAYER', 'gray')";
+    public static final String CREATE_DEFAULT_RANK = "INSERT INTO rank (rank_id, rank_dpname, prio, prefix, color) VALUES (0, 'default', 0, 'PLAYER', 'gray')";
     public static final String CREATE_DEFAULT_RANK_PERM = "INSERT INTO rank_perm (rank_id, permission, has_op) VALUES (1, '*', FALSE)";
 
     /**
      * Player Tables
      */
-    public static final String CREATE_USER_TABLE = "CREATE TABLE IF NOT EXIST user (\n" +
+    public static final String CREATE_USER_TABLE = "CREATE TABLE IF NOT EXISTS mc_users (\n" +
             "    uuid UUID PRIMARY KEY,\n" +
             "    display_name VARCHAR(255) NOT NULL,\n" +
             "    rank_id INT NOT NULL DEFAULT 0,\n" +
             "    rank_until BIGINT NOT NULL DEFAULT -1,\n" +
+            "    language VARCHAR(10) NOT NULL DEFAULT 'de',\n" +
             "    FOREIGN KEY (rank_id) REFERENCES Rank(rank_id) ON DELETE SET DEFAULT\n" +
             ");";
+
+    /*
+     * public static final String CREATE_USER_TABLE = "CREATE TABLE IF NOT EXISTS mc_users (\n" +
+     * "    uuid UUID PRIMARY KEY,\n" +
+     * "    display_name VARCHAR(255) NOT NULL,\n" +
+     * "    rank_id INT NOT NULL DEFAULT 0,\n" +
+     * "    rank_until BIGINT NOT NULL DEFAULT -1,\n" +
+     * "    language VARCHAR(10) NOT NULL DEFAULT 'de',\n" +
+     * "    FOREIGN KEY (rank_id) REFERENCES Rank(rank_id) ON DELETE SET DEFAULT\n" +
+     * ");";
+     */
 
     /**
      * Sign Tables
      */
-    public static final String CREATE_SIGNS_TABLE = "CREATE TABLE IF NOT EXIST signs (\n" +
+    public static final String CREATE_SIGNS_TABLE = "CREATE TABLE IF NOT EXISTS signs (\n" +
             "    id SERIAL PRIMARY KEY,\n" +
             "    world VARCHAR(255) NOT NULL,\n" +
             "    coordinates JSONB NOT NULL\n" +

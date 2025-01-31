@@ -3,13 +3,12 @@ package de.janburzinski.rank.database;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import de.janburzinski.rank.database.helper.DatabaseHelperHandler;
-import de.janburzinski.rank.database.helper.TableSetupQueries;
 import de.janburzinski.rank.logger.LogService;
 import lombok.Getter;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Objects;
 
 /**
  * Ich verwende PostgreSQL als Datenbank für dieses Projekt, aufgrund der besseren Concurrency und Performance.
@@ -20,32 +19,50 @@ import java.sql.SQLException;
 @Getter
 public class DatabaseHandler extends Database {
 
+    private static DatabaseHandler instance;
+
     // Connection Variable, um die Verbindung zur Datenbank zu handeln
     public HikariDataSource dataSource;
     @Getter
-    public HikariConfig config;
+    public HikariConfig hikariConfig;
 
-    public DatabaseHandler(String host, String database, String username, String password, int port) {
-        super(host, database, username, password, port);
+    private final DatabaseConfig config;
+
+    private DatabaseHandler(DatabaseConfig config) {
+        super(config);
+        this.config = config;
+    }
+
+    public static DatabaseHandler getInstance() {
+        if (instance == null) throw new IllegalStateException("Datenbank Verbindung ist nicht verfügbar!");
+        return instance;
+    }
+
+    public static synchronized DatabaseHandler initialize(DatabaseConfig config) {
+        if (instance == null) {
+            instance = new DatabaseHandler(config);
+            instance.connect();
+        }
+        return instance;
     }
 
     @Override
     public void connect() {
         // setup connection
-        config = new HikariConfig();
-        config.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + database);
-        config.setUsername(username);
-        config.setPassword(password);
-        config.setMaximumPoolSize(10);
-        config.setMinimumIdle(5);
-        config.setMaxLifetime(1800000); // maximale lebenszeit einer verbindung
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        hikariConfig = new HikariConfig();
+        hikariConfig.setDriverClassName(org.postgresql.Driver.class.getName());
+        hikariConfig.setJdbcUrl("jdbc:postgresql://" + config.host() + ":" + config.port() + "/" + config.database());
+        hikariConfig.setUsername(config.username());
+        hikariConfig.setPassword(config.password());
+        hikariConfig.setMaximumPoolSize(50);
+        hikariConfig.setMinimumIdle(5);
+        hikariConfig.setMaxLifetime(55000);
+        hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
-        this.dataSource = new HikariDataSource(config);
-        if (dataSource.isRunning())
-            LogService.info("Die Verbindung zur Datenbank wurde erfolgreich hergestellt!");
+        this.dataSource = new HikariDataSource(hikariConfig);
+        LogService.info("Die Verbindung zur Datenbank wurde erfolgreich hergestellt!");
 
         // tabellen erstellen und default inputs erstellen, falls nicht vorhanden
         DatabaseHelperHandler databaseHelper = new DatabaseHelperHandler(this);
@@ -65,6 +82,12 @@ public class DatabaseHandler extends Database {
     }
 
     public Connection getConnection() throws SQLException {
+        LogService.debug("db conn is null | is not closed?: " + Objects.isNull(dataSource.getConnection()) + " | " + !dataSource.getConnection().isClosed());
         return dataSource.getConnection();
+    }
+
+    @Override
+    public DatabaseConfig getConfig() {
+        return config;
     }
 }

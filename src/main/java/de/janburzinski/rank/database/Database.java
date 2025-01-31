@@ -1,15 +1,15 @@
 package de.janburzinski.rank.database;
 
-import com.zaxxer.hikari.HikariConfig;
-import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public abstract class Database {
-    public String host, database, username, password;
-    public final int port;
+    @Getter
+    private final DatabaseConfig dbConfig;
 
     /**
      * Verbindung zur PostgreSQL Datenbank herstellen
@@ -26,6 +26,6 @@ public abstract class Database {
      */
     public abstract Connection getConnection() throws SQLException;
 
-    public abstract HikariConfig getConfig();
+    public abstract DatabaseConfig getConfig();
 
 }
