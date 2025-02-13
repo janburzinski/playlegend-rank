@@ -13,6 +13,7 @@ public class ListenerHandler {
 
     public void registerListeners() {
         Bukkit.getPluginManager().registerEvents(new PlayerJoinListener(plugin), plugin);
+        Bukkit.getPluginManager().registerEvents(new PlayerChatListener(), plugin);
 
         Bukkit.getPluginManager().registerEvents(new RankChangeListener(plugin), plugin);
 

@@ -14,9 +14,6 @@ public class LogService {
 
     public static void warning(String message) {
         Bukkit.getLogger().warning(prefix + message);
-
-        // ONLY IN DEVELOPMENT
-        Bukkit.shutdown();
     }
 
     public static void debug(String message) {

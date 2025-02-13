@@ -3,12 +3,11 @@ package de.janburzinski.rank.database.helper;
 import de.janburzinski.rank.database.DatabaseHandler;
 import de.janburzinski.rank.logger.LogService;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class DatabaseHelperHandler implements DatabaseHelper {
     private final DatabaseHandler databaseHandler;
+    private final boolean DEBUG = true;
 
     public DatabaseHelperHandler(DatabaseHandler databaseHandler) {
         this.databaseHandler = databaseHandler;
@@ -16,9 +15,12 @@ public class DatabaseHelperHandler implements DatabaseHelper {
 
     @Override
     public void setupTables() throws SQLException {
+        // debug = true => delete tables on startup ( :o )
+        if (DEBUG) resetTabels();
+
         // müssen die ganzen tabellen und default inputs überhaupt erstellt werden?
         boolean s = shouldSetup();
-        LogService.info("s:" + s);
+        LogService.info("should setup tables?: " + s);
         if (!s) return;
 
         LogService.info("Tabellen Setup wird eingeleitet...");
@@ -37,9 +39,10 @@ public class DatabaseHelperHandler implements DatabaseHelper {
                 // default inputs erstellen
                 statement.execute(TableSetupQueries.CREATE_DEFAULT_RANK);
                 statement.execute(TableSetupQueries.CREATE_DEFAULT_RANK_PERM);
+                LogService.debug("table setup leutis");
 
                 connection.commit();
-                LogService.info("Tabellen Setup fertig...");
+                LogService.debug("Tabellen Setup fertig...");
             } catch (SQLException e) {
                 connection.rollback();
                 LogService.warning("Fehler beim erstellen von den Default Inputs und Tables: " + e.getMessage());
@@ -55,13 +58,17 @@ public class DatabaseHelperHandler implements DatabaseHelper {
 
     @Override
     public boolean shouldSetup() {
-        String query = "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'mc_users')";
-        try (Connection connection = databaseHandler.getConnection();
-             Statement statement = connection.createStatement();
-             var resultSet = statement.executeQuery(query)) {
+        if (DEBUG) return true;
+
+        String query = "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public'" +
+                " AND table_name = 'mc_users')";
+        try (Connection connection = databaseHandler.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet resultSet = statement.executeQuery();
+
             if (resultSet.next()) {
                 boolean exists = resultSet.getBoolean(1);
-                //LogService.info("Die Tabelle 'user' existiert: " + exists);
+                LogService.debug("Die Tabelle 'user' existiert: " + exists);
                 return !exists;
             }
         } catch (SQLException e) {
@@ -74,6 +81,13 @@ public class DatabaseHelperHandler implements DatabaseHelper {
 
     @Override
     public void resetTabels() {
-        
+        LogService.warning("DROPPED ALL TABLES SINCE DEBUG IS ENABLED");
+        try (Connection connection = databaseHandler.getConnection()) {
+            String query = "DROP TABLE IF EXISTS rank, rank_perm, mc_users, signs;";
+            connection.prepareStatement(query).executeUpdate();
+            LogService.warning("DEBUG ENABLED: DROPPED ALL TABLES");
+        } catch (SQLException e) {
+            LogService.warning("Fehler beim droppen aller Tabellen: " + e.getMessage());
+        }
     }
 }

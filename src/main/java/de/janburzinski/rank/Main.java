@@ -6,24 +6,16 @@ import de.janburzinski.rank.database.DatabaseHandler;
 import de.janburzinski.rank.events.EventInitializer;
 import de.janburzinski.rank.listener.ListenerHandler;
 import de.janburzinski.rank.logger.LogService;
-import org.bukkit.Bukkit;
+import de.janburzinski.rank.sign.SignHandler;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public class Main extends JavaPlugin implements Listener {
+public class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
         // default config speichern, falls nicht existent
         saveDefaultConfig();
-
-        // ONLY ENABLE IN DEV ENV
-        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-            getLogger().severe("Uncaught exception detected: " + throwable.getMessage());
-            throwable.printStackTrace();
-            Bukkit.shutdown(); // Stop the server on error
-        });
 
         // config file laden "config.yml"
         FileConfiguration config = getConfig();
@@ -47,9 +39,14 @@ public class Main extends JavaPlugin implements Listener {
         listenerHandler.registerListeners();
 
         // register commands
-        CommandHandler commandHandler = new CommandHandler();
+        CommandHandler commandHandler = new CommandHandler(this);
         commandHandler.initializeCommands();
 
+        // init cache
+
+        // load signs
+        SignHandler signHandler = new SignHandler();
+        signHandler.loadSigns();
 
         LogService.info("Rank Plugin enabled!");
     }

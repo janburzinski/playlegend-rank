@@ -1,7 +1,9 @@
 package de.janburzinski.rank.player;
 
 import de.janburzinski.rank.database.DatabaseHandler;
+import de.janburzinski.rank.exceptions.GetPlayerException;
 import de.janburzinski.rank.exceptions.UserUpdateException;
+import de.janburzinski.rank.group.LegendGroup;
 import de.janburzinski.rank.group.LegendGroupHandler;
 import de.janburzinski.rank.logger.LogService;
 import org.bukkit.entity.Player;
@@ -21,6 +23,11 @@ public class LegendPlayerHandler {
     private final UUID uuid;
     private final Player player;
 
+    public LegendPlayerHandler(Player player) {
+        this.player = player;
+        this.uuid = player.getUniqueId();
+    }
+
     public LegendPlayerHandler(UUID uuid, Player player) {
         this.player = player;
         this.uuid = uuid;
@@ -36,22 +43,54 @@ public class LegendPlayerHandler {
      * @throws UserUpdateException Datenbank Verbindung steht vermutlich nicht
      */
     public void updatePlayer() throws UserUpdateException {
-        LogService.info(player.getName() + " | " + player.getUniqueId());
+        LogService.debug(player.getName() + " | " + player.getUniqueId());
         try (Connection connection = DatabaseHandler.getInstance().getConnection()) {
             PreparedStatement statement = connection.prepareStatement("INSERT INTO mc_users (uuid, display_name) VALUES (?, ?) " +
                     "ON CONFLICT (uuid) DO UPDATE SET display_name = EXCLUDED.display_name;");
 
             UUID uuid = player.getUniqueId();
             String displayName = player.getName();
+
             statement.setObject(1, uuid);
             statement.setString(2, displayName); // display name beim einfügen
             statement.executeUpdate();
 
-            LogService.debug("| USER | [" + displayName + "] - " + uuid + " - wurde erstellt");
+            LogService.debug("| USER | [" + displayName + "] - " + uuid + " - wurde erstellt/geupdated");
         } catch (SQLException e) {
-            throw new UserUpdateException("Fehler beim bekommen der Datenbank Instanz, vermutlich nicht verbunden: "
+            throw new UserUpdateException("Fehler beim Player Updaten: "
                     + e.getMessage());
         }
+    }
+
+    public LegendPlayer getPlayer(UUID uuid) throws GetPlayerException {
+        try (Connection connection = DatabaseHandler.getInstance().getConnection()) {
+            String query = "SELECT u.*, r.rank_dpname, r.prio, r.prefix, r.color " +
+                    "FROM mc_users u " +
+                    "LEFT JOIN rank r ON u.rank_id = r.rank_id " +
+                    "WHERE u.uuid = ?";
+
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setObject(1, uuid);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    String displayName = rs.getString("display_name");
+
+                    String rankDisplayName = rs.getString("rank_dpname");
+                    int rankPrio = rs.getInt("prio");
+                    String prefix = rs.getString("prefix");
+                    int color = rs.getInt("color");
+
+                    LegendGroup rank = new LegendGroup(rankDisplayName, rankPrio, prefix, color);
+
+                    return new LegendPlayer(uuid, displayName, rank);
+                }
+            }
+        } catch (SQLException e) {
+            throw new GetPlayerException("Fehler beim bekommen vom Spieler aus der DB: "
+                    + e.getMessage());
+        }
+
+        return null;
     }
 
     /**

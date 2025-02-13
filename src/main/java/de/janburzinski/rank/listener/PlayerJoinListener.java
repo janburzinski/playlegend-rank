@@ -9,8 +9,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-import java.util.Objects;
-
 public class PlayerJoinListener implements Listener {
 
     private final Main plugin;
@@ -32,7 +30,7 @@ public class PlayerJoinListener implements Listener {
         event.joinMessage(null);
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            LogService.info("player is null: " + Objects.isNull(player) + " | " + Objects.isNull(player.getUniqueId()));
+            LogService.info("player: " + player + " | " + player.getUniqueId());
 
             LegendPlayerHandler legendPlayer = new LegendPlayerHandler(player.getUniqueId(), player);
             try {
